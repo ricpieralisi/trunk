@@ -110,6 +110,7 @@ class CpmMat: public FrictMat {
 		((Real,plTau,((void)"deactivated if negative",-1),,"Characteristic time for visco-plasticity. [s]"))
 		((Real,plRateExp,0,,"Exponent for visco-plasticity function. [-]"))
 		((Real,isoPrestress,0,,"Isotropic prestress of the whole specimen. [Pa]")),
+		((Real,MatType,1,,"Normal concrete [1] and for pervious concrete [2]")), //Ricardo (04/11/13)
 		createIndex(); density=4800;
 	);
 	REGISTER_CLASS_INDEX(CpmMat,FrictMat);
@@ -173,6 +174,7 @@ class CpmPhys: public NormShearPhys {
 			((Real,plTau,-1,,"characteristic time for viscoplasticity (if non-positive, no rate-dependence for shear)"))
 			((Real,plRateExp,0,,"exponent in the rate-dependent viscoplasticity"))
 			((Real,isoPrestress,0,,"\"prestress\" of this link (used to simulate isotropic stress)"))
+			((Real,MatType,1,,"Normal concrete [1] and for pervious concrete [2]")) //Ricardo (04/11/13)
 			((Real,kappaD,0,,"Up to now maximum normal strain (semi-norm), non-decreasing in time."))
 			((Real,epsNPl,0,,"normal plastic strain (initially zero)"))
 			((Vector3r,epsTPl,Vector3r::Zero(),,"shear plastic strain (initially zero)"))
