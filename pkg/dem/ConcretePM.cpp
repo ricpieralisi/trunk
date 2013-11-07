@@ -60,6 +60,7 @@ void Ip2_CpmMat_CpmMat_CpmPhys::go(const shared_ptr<Material>& pp1, const shared
 		cpmPhys->tanFrictionAngle = tan(mat1->frictionAngle);
 		cpmPhys->undamagedCohesion = mat1->sigmaT;
 		cpmPhys->isCohesive = (cohesiveThresholdIter < 0 || scene->iter < cohesiveThresholdIter);
+                cpmPhys->MatType = mat1->MatType; //Ricardo (04/11/13)
 		#define _CPATTR(a) cpmPhys->a=mat1->a
 			_CPATTR(epsCrackOnset);
 			_CPATTR(relDuctility);
@@ -78,6 +79,7 @@ void Ip2_CpmMat_CpmMat_CpmPhys::go(const shared_ptr<Material>& pp1, const shared
 			cpmPhys->tanFrictionAngle = tan(.5*(mat1->frictionAngle + mat2->frictionAngle));
 			cpmPhys->undamagedCohesion = .5*(mat1->sigmaT + mat2->sigmaT);
 			cpmPhys->isCohesive = (cohesiveThresholdIter < 0 || scene->iter < cohesiveThresholdIter);
+                        cpmPhys->MatType = mat1->MatType; //Ricardo (04/11/13)
 			_AVGATTR(epsCrackOnset);
 			_AVGATTR(relDuctility);
 			cpmPhys->neverDamage = (mat1->neverDamage || mat2->neverDamage);
@@ -302,7 +304,15 @@ void Law2_ScGeom_CpmPhys_Cpm::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _p
 		if (b1index == sphereIndex && b2index == sphereIndex) { // both bodies are spheres
 			const Vector3r& pos1 = Body::byId(I->id1,scene)->state->pos;
 			const Vector3r& pos2 = Body::byId(I->id2,scene)->state->pos;
-			Real minRad = (geom->refR1 <= 0? geom->refR2 : (geom->refR2 <=0? geom->refR1 : min(geom->refR1,geom->refR2)));
+//Ricardo (04/11/13) -> Change the crossSection to real contact region for pervious concrete			
+			Real minRad;
+                        if (phys->MatType == 1) {
+				minRad = (geom->refR1 <= 0? geom->refR2 : (geom->refR2 <=0? geom->refR1 : min(geom->refR1,geom->refR2)));
+			} else {
+ 				Real dist = geom->refR1 + geom->refR2 - geom->penetrationDepth;//Ricardo (04/11/13) 
+				if (dist == geom->refR1 + geom->refR2){ dist = 0.999 * (geom->refR1 + geom->refR2); }//Ricardo (04/11/13) 
+                        	minRad = pow(((4 * pow(dist,2) * pow(geom->refR1,2) - pow((pow(dist,2) - pow(geom->refR2,2) + pow(geom->refR1,2)),2)) / (4 * pow(dist,2))),(1.0/2.0));//Ricardo (04/11/13) 
+			}			
 			Vector3r shift2 = scene->isPeriodic? Vector3r(scene->cell->hSize*I->cellDist.cast<Real>()) : Vector3r::Zero();
 			phys->refLength = (pos2 - pos1 + shift2).norm();
 			phys->crossSection = Mathr::PI*pow(minRad,2);
@@ -311,7 +321,13 @@ void Law2_ScGeom_CpmPhys_Cpm::go(shared_ptr<IGeom>& _geom, shared_ptr<IPhys>& _p
 			shared_ptr<Body> sphere, plane;
 			if (b1index == facetIndex || b1index == wallIndex) { plane = b1; sphere = b2; }
 			else { plane = b2; sphere = b1; }
-			Real rad = ( (Sphere*) sphere->shape.get() )->radius;
+//Ricardo (04/11/13) -> Change the crossSection to real contact region for pervious concrete
+			Real rad;
+			if (phys->MatType == 1) {
+				rad = ( (Sphere*) sphere->shape.get() )->radius;
+			} else {
+				rad = ( (Sphere*) sphere->shape.get() )->radius - geom->penetrationDepth;//Ricardo (04/11/13)
+			}
 			phys->refLength = rad;
 			phys->crossSection = Mathr::PI*pow(rad,2);
 			phys->refPD = 0.;
